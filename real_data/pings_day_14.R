@@ -4,24 +4,18 @@
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(survival))
 suppressPackageStartupMessages(library(quantreg))
-suppressPackageStartupMessages(library(conTree))
 suppressPackageStartupMessages(library(GauPro))
 suppressPackageStartupMessages(library(gbm))
 suppressPackageStartupMessages(library(grf))
-suppressPackageStartupMessages(library(caret))
-library(foreach)
-library(doParallel)
-library(ggplot2)
-library(ggExtra)
-source("~/Documents/GitHub/adaptive_cfsurv-main/workflow/simulation/pings/pings_run.R")
-datapath = "~/Documents/GitHub/adaptive_cfsurv-main/workflow/simulation/pings/"
+## library(ggExtra)
+source("pings_run.R")
 
 m0 = 14
 L = 21
 K = 16 # number of dataset splitting
 
 
-data <- read.csv(paste0(datapath,"data_", m0,".csv"))
+data <- read.csv(paste0("data_", m0,".csv"))
 data = data[,-1]
 
 
@@ -44,19 +38,14 @@ c_list = NULL
 
 
 
-detectCores()
-cl<- makeCluster(detectCores(), outfile="")
-registerDoParallel(cl)
-alpha.seq = c(0.1)
-nam = c("adaptive LPB (T)","adaptive LPB (CT)","Fix-LPB","Naive-CQR","Cox","RF")
+alpha = 0.1
+nam = c("adaptive LPB (T)","adaptive LPB (CT)",
+        "Fix-LPB","Naive-CQR","Cox","RF")
 num_method = length(nam)
 mod_list = c("cox")
-for(alpha in alpha.seq){
-  print(alpha)
-  simures = foreach(i = 1:K, .combine="rbind"
-  ) %dopar% real.simu(data[samp[i,],],trueT[samp[i,]],alpha,n_test,c_list)
-  write.csv(simures,file = paste0("~/Documents/GitHub/adaptive_cfsurv-main/result/ping/hist_",
-                                  m0,"_",m,"_",seed,"_",K,"_",n,"_",n_test,"_",alpha*100,"_",opt,".csv"))
+sim_res = NULL 
+for(i in 1:K){
+  sim_res <- real.simu(data[samp[i,],],trueT[samp[i,]],alpha,n_test,c_list)
+  save_dir = sprintf("../results/real_data_seed_%d.csv", i)
+  write.csv(sim_res, save_dir)
 }
-
-stopCluster(cl) 
